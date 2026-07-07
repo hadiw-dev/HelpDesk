@@ -41,4 +41,9 @@ public static class SeedIds
         public static readonly Guid Resolved = Guid.Parse("e0000000-0000-0000-0000-000000000004");
         public static readonly Guid Closed = Guid.Parse("e0000000-0000-0000-0000-000000000005");
     }
+
+    public static class SystemSettings
+    {
+        public static readonly Guid Singleton = Guid.Parse("f0000000-0000-0000-0000-000000000001");
+    }
 }

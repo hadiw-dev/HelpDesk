@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { AssignmentPanel } from '@/components/tickets/AssignmentPanel'
+import { AttachmentsPanel } from '@/components/tickets/AttachmentsPanel'
 import { CommentsPanel } from '@/components/tickets/CommentsPanel'
 import { TicketTimeline } from '@/components/tickets/TicketTimeline'
 import { useAuth } from '@/hooks/useAuth'
@@ -165,6 +166,8 @@ export function TicketDetailsPage() {
       </div>
 
       {canDelete && <AssignmentPanel ticket={ticket} />}
+
+      <AttachmentsPanel ticketId={ticket.id} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <CommentsPanel

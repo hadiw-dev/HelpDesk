@@ -983,3 +983,65 @@ GO
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260707133401_AddSystemSettings'
+)
+BEGIN
+    CREATE TABLE [SystemSettings] (
+        [Id] uniqueidentifier NOT NULL,
+        [SiteName] nvarchar(200) NOT NULL,
+        [MaxFileUploadSizeMb] int NOT NULL,
+        [AllowedFileExtensions] nvarchar(500) NOT NULL,
+        [DefaultPageSize] int NOT NULL,
+        [CreatedAt] datetime2 NOT NULL,
+        [CreatedBy] nvarchar(256) NULL,
+        [UpdatedAt] datetime2 NULL,
+        [UpdatedBy] nvarchar(256) NULL,
+        [IsDeleted] bit NOT NULL,
+        [DeletedAt] datetime2 NULL,
+        [DeletedBy] nvarchar(256) NULL,
+        CONSTRAINT [PK_SystemSettings] PRIMARY KEY ([Id])
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260707133401_AddSystemSettings'
+)
+BEGIN
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'AllowedFileExtensions', N'CreatedAt', N'CreatedBy', N'DefaultPageSize', N'DeletedAt', N'DeletedBy', N'IsDeleted', N'MaxFileUploadSizeMb', N'SiteName', N'UpdatedAt', N'UpdatedBy') AND [object_id] = OBJECT_ID(N'[SystemSettings]'))
+        SET IDENTITY_INSERT [SystemSettings] ON;
+    EXEC(N'INSERT INTO [SystemSettings] ([Id], [AllowedFileExtensions], [CreatedAt], [CreatedBy], [DefaultPageSize], [DeletedAt], [DeletedBy], [IsDeleted], [MaxFileUploadSizeMb], [SiteName], [UpdatedAt], [UpdatedBy])
+    VALUES (''f0000000-0000-0000-0000-000000000001'', N''.pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt,.zip'', ''2026-01-01T00:00:00.0000000Z'', NULL, 20, NULL, NULL, CAST(0 AS bit), 10, N''HelpDesk System'', NULL, NULL)');
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'AllowedFileExtensions', N'CreatedAt', N'CreatedBy', N'DefaultPageSize', N'DeletedAt', N'DeletedBy', N'IsDeleted', N'MaxFileUploadSizeMb', N'SiteName', N'UpdatedAt', N'UpdatedBy') AND [object_id] = OBJECT_ID(N'[SystemSettings]'))
+        SET IDENTITY_INSERT [SystemSettings] OFF;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260707133401_AddSystemSettings'
+)
+BEGIN
+    CREATE INDEX [IX_SystemSettings_IsDeleted] ON [SystemSettings] ([IsDeleted]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260707133401_AddSystemSettings'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260707133401_AddSystemSettings', N'8.0.11');
+END;
+GO
+
+COMMIT;
+GO
+

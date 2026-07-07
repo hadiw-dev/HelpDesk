@@ -2,6 +2,12 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { AdminPage } from '@/pages/AdminPage'
+import { ActivityLogPage } from '@/pages/admin/ActivityLogPage'
+import { CategoryManagementPage } from '@/pages/admin/CategoryManagementPage'
+import { PriorityManagementPage } from '@/pages/admin/PriorityManagementPage'
+import { StatusManagementPage } from '@/pages/admin/StatusManagementPage'
+import { SystemSettingsPage } from '@/pages/admin/SystemSettingsPage'
+import { UserManagementPage } from '@/pages/admin/UserManagementPage'
 import { CreateTicketPage } from '@/pages/CreateTicketPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { EditTicketPage } from '@/pages/EditTicketPage'
@@ -15,6 +21,7 @@ import { ReportsPage } from '@/pages/ReportsPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { TicketDetailsPage } from '@/pages/TicketDetailsPage'
 import { TicketsPage } from '@/pages/TicketsPage'
+import { AdminRoute } from '@/routes/AdminRoute'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -42,8 +49,19 @@ export const router = createBrowserRouter([
           { path: '/tickets/:id', element: <TicketDetailsPage /> },
           { path: '/tickets/:id/edit', element: <EditTicketPage /> },
           { path: '/reports', element: <ReportsPage /> },
-          { path: '/admin', element: <AdminPage /> },
           { path: '/profile', element: <ProfilePage /> },
+          {
+            element: <AdminRoute />,
+            children: [
+              { path: '/admin', element: <AdminPage /> },
+              { path: '/admin/users', element: <UserManagementPage /> },
+              { path: '/admin/categories', element: <CategoryManagementPage /> },
+              { path: '/admin/priorities', element: <PriorityManagementPage /> },
+              { path: '/admin/statuses', element: <StatusManagementPage /> },
+              { path: '/admin/settings', element: <SystemSettingsPage /> },
+              { path: '/admin/activity-logs', element: <ActivityLogPage /> },
+            ],
+          },
         ],
       },
     ],

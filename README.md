@@ -44,6 +44,13 @@ Organizations need a reliable way for employees to report IT problems and for su
 - SLA compliance dashboard with a breached-ticket table
 - PDF and Excel report export of the same data
 
+### Administration
+- Secure ticket file upload/download — storage outside the web root, extension and size validation, GUID-based stored filenames
+- User management — create accounts, assign roles, activate/deactivate
+- Category/Priority/Status management (full CRUD, soft delete)
+- System Settings — site name, file upload limits, default page size (enforced live by the upload validator)
+- Activity Log Viewer — filterable, paginated system-wide audit trail
+
 ## Technology Stack
 
 **Frontend**
@@ -130,6 +137,7 @@ Full explanation: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | `Notification` | In-app notifications (assignment, comment, mention) per user |
 | `ActivityLog` | System-wide activity/audit log |
 | `RefreshToken` | JWT refresh token store |
+| `SystemSetting` | Singleton row of admin-configurable settings (site name, upload limits, page size) |
 
 Key relationships: a `Ticket` belongs to one `Category`, one `Priority`, one `Status`, is created by one `ApplicationUser`, and may be assigned to another. `TicketHistory`, `TicketAssignment`, `TicketComment`, and `Notification` all reference their parent `Ticket`. Soft delete (`IsDeleted`/`DeletedAt`) is applied globally via an EF Core query filter.
 
@@ -201,7 +209,7 @@ Swagger UI is available at `http://localhost:5019/swagger` whenever the API is r
 | Phase 3 | Ticket Management (CRUD, search, filtering, history) | ✅ Completed |
 | Phase 4 | Workflow (assignment, comments, notifications) | ✅ Completed |
 | Phase 5 | Dashboard & Reports (KPIs, charts, PDF/Excel export) | ✅ Completed |
-| Phase 6 | Administration (user/role management, lookup CRUD) | ⏳ Planned |
+| Phase 6 | Administration (user/role management, lookup CRUD, secure file upload/download) | ✅ Completed |
 
 Full roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -213,7 +221,8 @@ Full roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - CI/CD pipeline (build, test, and deploy on push)
 - Real-time notification delivery (SignalR/WebSockets) instead of polling
 - Configurable per-priority SLA policies
-- User/role management UI (Phase 6)
+- Custom role creation (today's 4 roles are fixed, hardcoded into every authorization policy)
+- Magic-byte content-type verification on file uploads (currently extension/declared-type only)
 
 ## Repository Layout
 
@@ -234,6 +243,6 @@ Full tree: [`docs/FOLDER_STRUCTURE.md`](docs/FOLDER_STRUCTURE.md).
 - [`docs/database-design.md`](docs/database-design.md) — entities, relationships, and design decisions (see also [`docs/DATABASE.md`](docs/DATABASE.md) for full schema/index detail)
 - [`docs/api-guide.md`](docs/api-guide.md) — main endpoint groups with example requests/responses
 - [`docs/development-notes.md`](docs/development-notes.md) — problems encountered, solutions, and lessons learned building this project
-- [`docs/PHASE2_AUTHENTICATION.md`](docs/PHASE2_AUTHENTICATION.md) · [`PHASE3_TICKET_MANAGEMENT.md`](docs/PHASE3_TICKET_MANAGEMENT.md) · [`PHASE4_TICKET_WORKFLOW.md`](docs/PHASE4_TICKET_WORKFLOW.md) · [`PHASE5_DASHBOARDS_REPORTING.md`](docs/PHASE5_DASHBOARDS_REPORTING.md) — what each phase added and how it was verified
+- [`docs/PHASE2_AUTHENTICATION.md`](docs/PHASE2_AUTHENTICATION.md) · [`PHASE3_TICKET_MANAGEMENT.md`](docs/PHASE3_TICKET_MANAGEMENT.md) · [`PHASE4_TICKET_WORKFLOW.md`](docs/PHASE4_TICKET_WORKFLOW.md) · [`PHASE5_DASHBOARDS_REPORTING.md`](docs/PHASE5_DASHBOARDS_REPORTING.md) · [`PHASE6_ADMINISTRATION.md`](docs/PHASE6_ADMINISTRATION.md) — what each phase added and how it was verified
 - [`docs/PITFALLS.md`](docs/PITFALLS.md) — the detailed technical issue/fix log this project's `development-notes.md` summarizes
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — remaining phases

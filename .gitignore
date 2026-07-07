@@ -65,6 +65,12 @@ backend/src/HelpDesk.Api/Logs/
 *.log
 
 # =========================================
+# Uploaded file storage (Phase 6)
+# =========================================
+# User-uploaded ticket attachments — runtime data, stored outside the web root, never source.
+backend/file-storage/
+
+# =========================================
 # OS files
 # =========================================
 .DS_Store

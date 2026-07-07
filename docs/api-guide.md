@@ -102,6 +102,35 @@ POST /api/v1/notifications/{id}/read
 POST /api/v1/notifications/read-all
 ```
 
+## Attachments
+
+```
+GET    /api/v1/tickets/{id}/attachments
+POST   /api/v1/tickets/{id}/attachments                          (multipart/form-data, field name "file")
+GET    /api/v1/tickets/{id}/attachments/{attachmentId}/download
+DELETE /api/v1/tickets/{id}/attachments/{attachmentId}           (uploader or Agent+ only)
+```
+
+Upload/download/list follow the same ticket-access rule as everything else on a ticket. Files are validated against the current `AllowedFileExtensions`/`MaxFileUploadSizeMb` in System Settings and stored under a generated name outside the web root — see [`PHASE6_ADMINISTRATION.md`](PHASE6_ADMINISTRATION.md).
+
+## Admin (Admin role only)
+
+```
+GET/POST   /api/v1/admin/users
+GET/PUT    /api/v1/admin/users/{id}
+PUT        /api/v1/admin/users/{id}/role
+DELETE     /api/v1/admin/users/{id}
+
+GET/POST   /api/v1/admin/{categories,priorities,statuses}
+PUT/DELETE /api/v1/admin/{categories,priorities,statuses}/{id}
+
+GET        /api/v1/admin/activity-logs?userId=&action=&dateFrom=&dateTo=&page=&pageSize=
+
+GET/PUT    /api/v1/admin/settings
+```
+
+An Admin can't change their own role, deactivate, or delete their own account — all three return `400` server-side.
+
 ## Dashboard & Reports
 
 ```

@@ -1,6 +1,11 @@
 using HelpDesk.Application.Common.Interfaces;
 using HelpDesk.Application.Common.Options;
+using HelpDesk.Application.Features.Admin.ActivityLogs.Interfaces;
+using HelpDesk.Application.Features.Admin.Lookups.Interfaces;
+using HelpDesk.Application.Features.Admin.Settings.Interfaces;
+using HelpDesk.Application.Features.Admin.Users.Interfaces;
 using HelpDesk.Application.Features.Assignments.Interfaces;
+using HelpDesk.Application.Features.Attachments.Interfaces;
 using HelpDesk.Application.Features.Auth.Interfaces;
 using HelpDesk.Application.Features.Comments.Interfaces;
 using HelpDesk.Application.Features.Dashboard.Interfaces;
@@ -49,6 +54,12 @@ public static class DependencyInjection
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IAttachmentService, AttachmentService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
+        services.AddScoped(typeof(IAdminLookupService<>), typeof(AdminLookupService<>));
+        services.AddScoped<IActivityLogQueryService, ActivityLogQueryService>();
+        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
         return services;
     }
