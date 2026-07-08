@@ -21,6 +21,7 @@ export function ActivityLogPage() {
       </div>
 
       <input
+        aria-label="Filter by action"
         value={actionFilter}
         onChange={(e) => {
           setActionFilter(e.target.value)

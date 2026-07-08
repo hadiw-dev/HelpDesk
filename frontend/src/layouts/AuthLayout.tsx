@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
+import { PageLoadingFallback } from '@/components/PageLoadingFallback'
 
 export function AuthLayout() {
   return (
@@ -9,7 +11,9 @@ export function AuthLayout() {
           <p className="text-sm text-muted-foreground">IT Help Desk &amp; Ticketing Management</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <Outlet />
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>

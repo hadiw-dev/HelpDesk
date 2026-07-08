@@ -3,7 +3,8 @@ using HelpDesk.IntegrationTests.Infrastructure;
 
 namespace HelpDesk.IntegrationTests;
 
-public class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
+[Collection(ApiCollection.Name)]
+public class ApiSmokeTests
 {
     private readonly HttpClient _client;
 

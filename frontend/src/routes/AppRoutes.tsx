@@ -1,27 +1,29 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { AdminPage } from '@/pages/AdminPage'
-import { ActivityLogPage } from '@/pages/admin/ActivityLogPage'
-import { CategoryManagementPage } from '@/pages/admin/CategoryManagementPage'
-import { PriorityManagementPage } from '@/pages/admin/PriorityManagementPage'
-import { StatusManagementPage } from '@/pages/admin/StatusManagementPage'
-import { SystemSettingsPage } from '@/pages/admin/SystemSettingsPage'
-import { UserManagementPage } from '@/pages/admin/UserManagementPage'
-import { CreateTicketPage } from '@/pages/CreateTicketPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { EditTicketPage } from '@/pages/EditTicketPage'
 import { ErrorPage } from '@/pages/ErrorPage'
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
-import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { ProfilePage } from '@/pages/ProfilePage'
-import { RegisterPage } from '@/pages/RegisterPage'
-import { ReportsPage } from '@/pages/ReportsPage'
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
-import { TicketDetailsPage } from '@/pages/TicketDetailsPage'
-import { TicketsPage } from '@/pages/TicketsPage'
 import { AdminRoute } from '@/routes/AdminRoute'
+import {
+  ActivityLogPage,
+  AdminPage,
+  CategoryManagementPage,
+  CreateTicketPage,
+  DashboardPage,
+  EditTicketPage,
+  ForgotPasswordPage,
+  LoginPage,
+  PriorityManagementPage,
+  ProfilePage,
+  RegisterPage,
+  ReportsPage,
+  ResetPasswordPage,
+  StatusManagementPage,
+  SystemSettingsPage,
+  TicketDetailsPage,
+  TicketsPage,
+  UserManagementPage,
+} from '@/routes/lazyPages'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 
 export const router = createBrowserRouter([

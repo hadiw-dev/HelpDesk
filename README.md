@@ -145,6 +145,23 @@ Full schema, constraints, and indexes: [`docs/database-design.md`](docs/database
 
 ## How to Run the Project
 
+Two options: **Docker Compose** (one command, no local .NET/Node/SQL Server install needed) or **native** (run the API and frontend directly on your machine). Full detail in [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) and [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) respectively — the quick version of each is below.
+
+### Option A: Docker Compose
+
+```bash
+cp .env.example .env   # set MSSQL_SA_PASSWORD and JWT_SECRET_KEY (see comments in the file)
+docker compose up --build
+```
+
+Starts all three containers (SQL Server → API → frontend, in that dependency order, each gated on the previous one's health check):
+
+- Frontend: `http://localhost:3000`
+- API + Swagger: `http://localhost:5019/swagger`
+- Health check: `http://localhost:5019/health`
+
+### Option B: Native
+
 ### Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) 20+ and npm
@@ -198,7 +215,7 @@ Migrations live in `backend/src/HelpDesk.Infrastructure/Persistence/Migrations/`
 
 ## API Documentation
 
-Swagger UI is available at `http://localhost:5019/swagger` whenever the API is running in Development mode — it documents every endpoint, request/response schema, and lets you authorize with a JWT bearer token to try requests interactively. See [`docs/api-guide.md`](docs/api-guide.md) for a written walkthrough of the main endpoint groups with example requests/responses.
+Swagger UI is available at `http://localhost:5019/swagger` in every environment (Development, Docker, or otherwise) — it documents every endpoint, request/response schema, and lets you authorize with a JWT bearer token to try requests interactively. A static export of the OpenAPI document is also checked in at [`docs/swagger/swagger.json`](docs/swagger/swagger.json). See [`docs/api-guide.md`](docs/api-guide.md) for a written walkthrough of the main endpoint groups with example requests/responses.
 
 ## Development Progress
 
@@ -210,28 +227,43 @@ Swagger UI is available at `http://localhost:5019/swagger` whenever the API is r
 | Phase 4 | Workflow (assignment, comments, notifications) | ✅ Completed |
 | Phase 5 | Dashboard & Reports (KPIs, charts, PDF/Excel export) | ✅ Completed |
 | Phase 6 | Administration (user/role management, lookup CRUD, secure file upload/download) | ✅ Completed |
+| Phase 7 | Hardening (security headers, JWT/upload validation, expanded test suite, frontend resilience) | ✅ Completed |
+| Phase 8 | Production Readiness (Docker Compose, deployment docs, release `v1.0.0`) | ✅ Completed |
 
 Full roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## Testing & API Tooling
+
+- **Backend test suite**: 149 tests (114 unit + 35 integration/API), all passing — see [`docs/PHASE7_TESTING_REPORT.md`](docs/PHASE7_TESTING_REPORT.md) for the full breakdown and [`docs/PHASE7_COVERAGE_REPORT.md`](docs/PHASE7_COVERAGE_REPORT.md) for coverage numbers.
+- **Postman collection**: [`postman/HelpDesk-API.postman_collection.json`](postman/HelpDesk-API.postman_collection.json) (+ [`postman/HelpDesk-Local.postman_environment.json`](postman/HelpDesk-Local.postman_environment.json)) covers every endpoint, with test scripts that auto-populate tokens/ids so it's runnable end-to-end after importing.
 
 ## Future Improvements
 
 - AI-assisted ticket classification (auto-suggest category/priority)
 - Chat assistant for common IT issues
-- Docker Compose deployment (API + SQL Server + frontend)
 - CI/CD pipeline (build, test, and deploy on push)
 - Real-time notification delivery (SignalR/WebSockets) instead of polling
 - Configurable per-priority SLA policies
 - Custom role creation (today's 4 roles are fixed, hardcoded into every authorization policy)
-- Magic-byte content-type verification on file uploads (currently extension/declared-type only)
+- Rate-limiting on login/register beyond ASP.NET Identity's built-in lockout
+- Hash refresh tokens at rest (currently stored as plaintext)
+- Automated frontend test suite (Vitest/Testing Library)
 
 ## Repository Layout
 
 ```
 HelpDeskSystem/
-├── backend/       # .NET 8 Clean Architecture solution (Domain / Application / Infrastructure / Api / tests)
-├── frontend/      # Vite + React + TypeScript client
-├── docs/          # Architecture, database, API, and process documentation
-├── screenshots/   # Application screenshots for this README/portfolio use
+├── backend/            # .NET 8 Clean Architecture solution (Domain / Application / Infrastructure / Api / tests)
+│   └── Dockerfile
+├── frontend/           # Vite + React + TypeScript client
+│   ├── Dockerfile
+│   └── nginx.conf
+├── docker-compose.yml  # API + frontend + SQL Server, orchestrated together
+├── .env.example        # Template for docker-compose.yml's required secrets
+├── postman/            # Complete Postman collection + environment
+├── docs/               # Architecture, database, API, deployment, and process documentation
+├── screenshots/        # Application screenshots for this README/portfolio use
+├── RELEASE_NOTES.md
 └── PROJECT_SPEC.md
 ```
 
@@ -243,6 +275,13 @@ Full tree: [`docs/FOLDER_STRUCTURE.md`](docs/FOLDER_STRUCTURE.md).
 - [`docs/database-design.md`](docs/database-design.md) — entities, relationships, and design decisions (see also [`docs/DATABASE.md`](docs/DATABASE.md) for full schema/index detail)
 - [`docs/api-guide.md`](docs/api-guide.md) — main endpoint groups with example requests/responses
 - [`docs/development-notes.md`](docs/development-notes.md) — problems encountered, solutions, and lessons learned building this project
-- [`docs/PHASE2_AUTHENTICATION.md`](docs/PHASE2_AUTHENTICATION.md) · [`PHASE3_TICKET_MANAGEMENT.md`](docs/PHASE3_TICKET_MANAGEMENT.md) · [`PHASE4_TICKET_WORKFLOW.md`](docs/PHASE4_TICKET_WORKFLOW.md) · [`PHASE5_DASHBOARDS_REPORTING.md`](docs/PHASE5_DASHBOARDS_REPORTING.md) · [`PHASE6_ADMINISTRATION.md`](docs/PHASE6_ADMINISTRATION.md) — what each phase added and how it was verified
+- [`docs/PHASE2_AUTHENTICATION.md`](docs/PHASE2_AUTHENTICATION.md) · [`PHASE3_TICKET_MANAGEMENT.md`](docs/PHASE3_TICKET_MANAGEMENT.md) · [`PHASE4_TICKET_WORKFLOW.md`](docs/PHASE4_TICKET_WORKFLOW.md) · [`PHASE5_DASHBOARDS_REPORTING.md`](docs/PHASE5_DASHBOARDS_REPORTING.md) · [`PHASE6_ADMINISTRATION.md`](docs/PHASE6_ADMINISTRATION.md) · [`PHASE7_HARDENING.md`](docs/PHASE7_HARDENING.md) · [`PHASE8_PRODUCTION_READINESS.md`](docs/PHASE8_PRODUCTION_READINESS.md) — what each phase added and how it was verified
+- [`docs/PHASE7_TESTING_REPORT.md`](docs/PHASE7_TESTING_REPORT.md) · [`PHASE7_COVERAGE_REPORT.md`](docs/PHASE7_COVERAGE_REPORT.md) — Phase 7's full test breakdown and code coverage numbers
+- [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) — native (non-Docker) local development setup
+- [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) — Docker Compose deployment, verification, and troubleshooting
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — feature walkthrough per role (Employee/Agent/Manager/Admin)
+- [`docs/DEPLOYMENT_CHECKLIST.md`](docs/DEPLOYMENT_CHECKLIST.md) · [`PRODUCTION_CHECKLIST.md`](docs/PRODUCTION_CHECKLIST.md) — pre-flight checklist and what changes before a real production launch
+- [`docs/PRESENTATION_SUMMARY.md`](docs/PRESENTATION_SUMMARY.md) — one-page portfolio/interview summary
+- [`RELEASE_NOTES.md`](RELEASE_NOTES.md) — changelog by phase for the `v1.0.0` release
 - [`docs/PITFALLS.md`](docs/PITFALLS.md) — the detailed technical issue/fix log this project's `development-notes.md` summarizes
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — remaining phases

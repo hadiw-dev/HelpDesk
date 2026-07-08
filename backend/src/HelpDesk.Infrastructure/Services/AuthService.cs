@@ -78,11 +78,13 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null || !user.IsActive)
         {
+            await _activityLogService.LogAsync(null, "LoginFailed", $"Failed login attempt for {request.Email} (unknown or inactive account).", ipAddress, cancellationToken);
             throw new UnauthorizedAppException("Invalid email or password.");
         }
 
         if (await _userManager.IsLockedOutAsync(user))
         {
+            await _activityLogService.LogAsync(user.Id, "LoginFailed", $"Login attempt for {request.Email} rejected — account locked out.", ipAddress, cancellationToken);
             throw new UnauthorizedAppException("Account is locked due to too many failed attempts. Try again later.");
         }
 
@@ -90,6 +92,7 @@ public class AuthService : IAuthService
         if (!passwordValid)
         {
             await _userManager.AccessFailedAsync(user);
+            await _activityLogService.LogAsync(user.Id, "LoginFailed", $"Failed login attempt for {request.Email} (incorrect password).", ipAddress, cancellationToken);
             throw new UnauthorizedAppException("Invalid email or password.");
         }
 

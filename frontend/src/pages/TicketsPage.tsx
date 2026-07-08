@@ -81,14 +81,22 @@ export function TicketsPage() {
           updateParams({ q: searchInput || undefined })
         }}
       >
+        <label htmlFor="ticket-search-input" className="sr-only">
+          Search tickets by title or ticket number
+        </label>
         <input
+          id="ticket-search-input"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by title or ticket number..."
           className="h-9 w-64 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
 
+        <label htmlFor="ticket-category-filter" className="sr-only">
+          Filter by category
+        </label>
         <select
+          id="ticket-category-filter"
           value={categoryId}
           onChange={(e) => updateParams({ categoryId: e.target.value })}
           className={selectClassName}
@@ -101,7 +109,11 @@ export function TicketsPage() {
           ))}
         </select>
 
+        <label htmlFor="ticket-priority-filter" className="sr-only">
+          Filter by priority
+        </label>
         <select
+          id="ticket-priority-filter"
           value={priorityId}
           onChange={(e) => updateParams({ priorityId: e.target.value })}
           className={selectClassName}
@@ -114,7 +126,15 @@ export function TicketsPage() {
           ))}
         </select>
 
-        <select value={statusId} onChange={(e) => updateParams({ statusId: e.target.value })} className={selectClassName}>
+        <label htmlFor="ticket-status-filter" className="sr-only">
+          Filter by status
+        </label>
+        <select
+          id="ticket-status-filter"
+          value={statusId}
+          onChange={(e) => updateParams({ statusId: e.target.value })}
+          className={selectClassName}
+        >
           <option value="">All statuses</option>
           {statuses?.map((s) => (
             <option key={s.id} value={s.id}>
@@ -123,7 +143,11 @@ export function TicketsPage() {
           ))}
         </select>
 
+        <label htmlFor="ticket-sort-by" className="sr-only">
+          Sort by
+        </label>
         <select
+          id="ticket-sort-by"
           value={sortBy}
           onChange={(e) => updateParams({ sortBy: e.target.value })}
           className={selectClassName}

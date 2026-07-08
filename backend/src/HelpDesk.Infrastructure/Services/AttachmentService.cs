@@ -1,5 +1,6 @@
 using HelpDesk.Application.Common.Exceptions;
 using HelpDesk.Application.Common.Interfaces;
+using HelpDesk.Application.Common.Utils;
 using HelpDesk.Application.Features.Admin.Settings.Interfaces;
 using HelpDesk.Application.Features.Attachments.Dtos;
 using HelpDesk.Application.Features.Attachments.Interfaces;
@@ -60,6 +61,18 @@ public class AttachmentService : IAttachmentService
         if (request.Length <= 0 || request.Length > maxBytes)
         {
             throw new ValidationAppException($"File size must be greater than 0 and no more than {settings.MaxFileUploadSizeMb} MB.");
+        }
+
+        // Extension checks alone trust the client-supplied name; verify the actual leading bytes too,
+        // so `malware.exe` renamed to `malware.pdf` doesn't pass. IFormFile.OpenReadStream() is always
+        // seekable, so rewinding after peeking the header is safe.
+        var header = new byte[8];
+        var headerBytesRead = await request.Content.ReadAsync(header.AsMemory(0, header.Length), cancellationToken);
+        request.Content.Position = 0;
+
+        if (!FileSignatureValidator.IsContentValidForExtension(extension, header.AsSpan(0, headerBytesRead)))
+        {
+            throw new ValidationAppException($"File content does not match its declared type '{extension}'.");
         }
 
         var storedFileName = await _fileStorageService.SaveAsync(request.Content, extension, cancellationToken);

@@ -1,10 +1,13 @@
 # Folder Structure
 
-Complete tree as of the end of Phase 6 (Administration). Build artifacts (`bin/`, `obj/`, `node_modules/`, `dist/`) are omitted.
+Complete tree as of the end of Phase 8 (Production Readiness). Build artifacts (`bin/`, `obj/`, `node_modules/`, `dist/`, `TestResults/`) are omitted.
 
 ```
 HelpDeskSystem/
 ├── PROJECT_SPEC.md
+├── RELEASE_NOTES.md                      # Phase 8
+├── docker-compose.yml                     # Phase 8 — api + frontend + sqlserver, orchestrated together
+├── .env.example                           # Phase 8 — template for docker-compose.yml's secrets
 ├── docs/
 │   ├── FOLDER_STRUCTURE.md
 │   ├── ARCHITECTURE.md
@@ -17,12 +20,28 @@ HelpDeskSystem/
 │   ├── PHASE4_TICKET_WORKFLOW.md
 │   ├── PHASE5_DASHBOARDS_REPORTING.md
 │   ├── PHASE6_ADMINISTRATION.md
+│   ├── PHASE7_HARDENING.md
+│   ├── PHASE7_TESTING_REPORT.md
+│   ├── PHASE7_COVERAGE_REPORT.md
+│   ├── PHASE8_PRODUCTION_READINESS.md   # Phase 8
+│   ├── SETUP_GUIDE.md                   # Phase 8 — native local dev setup
+│   ├── DEPLOYMENT_GUIDE.md              # Phase 8 — Docker Compose deployment, verification, troubleshooting
+│   ├── USER_GUIDE.md                    # Phase 8 — feature walkthrough per role
+│   ├── DEPLOYMENT_CHECKLIST.md          # Phase 8
+│   ├── PRODUCTION_CHECKLIST.md          # Phase 8
+│   ├── PRESENTATION_SUMMARY.md          # Phase 8
+│   ├── swagger/swagger.json             # Phase 8 — static export of the live OpenAPI document
 │   ├── PITFALLS.md
 │   └── ROADMAP.md
+├── postman/                              # Phase 7 — complete Postman collection + local environment
+│   ├── HelpDesk-API.postman_collection.json
+│   └── HelpDesk-Local.postman_environment.json
 ├── screenshots/
 │   └── README.md
 ├── backend/
 │   ├── HelpDesk.sln
+│   ├── Dockerfile                          # Phase 8 — multi-stage build, non-root runtime user
+│   ├── .dockerignore                       # Phase 8
 │   ├── file-storage/                       # Phase 6 — uploaded ticket attachments, outside backend/src/ entirely
 │   ├── database/
 │   │   └── InitialCreate.sql              # Idempotent SQL script, covers all migrations to date
@@ -69,7 +88,8 @@ HelpDeskSystem/
 │       │   │   ├── Models/
 │       │   │   │   └── PagedResult.cs      # Phase 3 — generic paging envelope, reused throughout
 │       │   │   ├── Utils/
-│       │   │   │   └── MentionParser.cs    # Phase 4 — extracts @[Name](userId) tokens from comment text
+│       │   │   │   ├── MentionParser.cs    # Phase 4 — extracts @[Name](userId) tokens from comment text
+│       │   │   │   └── FileSignatureValidator.cs  # Phase 7 — magic-byte content validation for uploads
 │       │   │   └── Mappings/
 │       │   │       └── MappingProfile.cs
 │       │   ├── Features/
@@ -176,16 +196,19 @@ HelpDeskSystem/
 │           ├── Filters/ValidationFilter.cs
 │           ├── Middleware/
 │           │   ├── ExceptionHandlingMiddleware.cs
-│           │   └── HealthCheckResponseWriter.cs
+│           │   ├── HealthCheckResponseWriter.cs
+│           │   └── SecurityHeadersMiddleware.cs   # Phase 7 — nosniff/frame-options/referrer-policy headers
 │           ├── Services/CurrentUserService.cs
-│           ├── Program.cs                  # + QuestPDF license (Phase 5)
+│           ├── Program.cs                  # + QuestPDF license (Phase 5); + JWT secret length fail-fast, HSTS (Phase 7); + Swagger in all envs, ApplyMigrationsOnStartup (Phase 8)
 │           ├── appsettings.json            # + FileStorage:RootPath (Phase 6)
 │           └── appsettings.Development.json
 │   └── tests/
-│       ├── HelpDesk.Tests/                 # Unit tests (xUnit + Moq)
+│       ├── HelpDesk.Tests/                 # Unit tests (xUnit + Moq) — 114 tests total
 │       │   ├── Common/
+│       │   │   ├── AutoMapperConfigurationTests.cs
+│       │   │   └── FileSignatureValidatorTests.cs      # Phase 7 — 5 methods / 14 cases
 │       │   ├── Persistence/
-│       │   ├── Auth/                       # Phase 2
+│       │   ├── Auth/                       # Phase 2 + failed-login/lockout logging tests (Phase 7)
 │       │   ├── Tickets/TicketServiceTests.cs
 │       │   ├── Assignments/AssignmentServiceTests.cs   # Phase 4 — 7 tests
 │       │   ├── Comments/CommentServiceTests.cs         # Phase 4 — 8 tests
@@ -193,7 +216,7 @@ HelpDeskSystem/
 │       │   ├── Dashboard/                              # Phase 5
 │       │   │   ├── DashboardServiceTests.cs            # 9 tests
 │       │   │   └── ReportServiceTests.cs                # 2 tests
-│       │   ├── Attachments/                             # Phase 6 — 9 tests
+│       │   ├── Attachments/                             # Phase 6 + magic-byte tests (Phase 7) — 12 tests
 │       │   │   ├── AttachmentServiceTests.cs
 │       │   │   └── FakeFileStorageService.cs           # in-memory IFileStorageService test double
 │       │   └── Admin/                                   # Phase 6
@@ -201,10 +224,21 @@ HelpDeskSystem/
 │       │       ├── AdminLookupServiceTests.cs          # 6 tests
 │       │       ├── ActivityLogQueryServiceTests.cs     # 4 tests
 │       │       └── SystemSettingsServiceTests.cs       # 3 tests
-│       └── HelpDesk.IntegrationTests/      # WebApplicationFactory-based integration tests
-│           └── Infrastructure/
+│       └── HelpDesk.IntegrationTests/      # WebApplicationFactory-based integration tests — 35 tests total, real LocalDB
+│           ├── Infrastructure/
+│           │   ├── TestWebApplicationFactory.cs
+│           │   ├── ApiCollection.cs        # Phase 7 — shared collection fixture (see PITFALLS.md)
+│           │   └── AuthTestHelper.cs       # Phase 7 — register/login/promote-role helpers, shared JSON options
+│           ├── ApiSmokeTests.cs            # 3 tests
+│           ├── AuthFlowTests.cs            # Phase 7 — 10 tests
+│           ├── AuthorizationTests.cs       # Phase 7 — 7 tests
+│           ├── SecurityTests.cs            # Phase 7 — headers/CORS/SQLi/XSS, 5 methods / 7 cases
+│           └── TicketApiTests.cs           # Phase 7 — 8 tests
 │
 └── frontend/
+    ├── Dockerfile                            # Phase 8 — multi-stage build (node → nginx static serve)
+    ├── .dockerignore                         # Phase 8
+    ├── nginx.conf                            # Phase 8 — SPA fallback routing + /health endpoint
     ├── index.html
     ├── vite.config.ts
     ├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
@@ -216,6 +250,8 @@ HelpDeskSystem/
         │   └── axiosInstance.ts            # 401 refresh-and-retry interceptor (Phase 2)
         ├── components/
         │   ├── ui/                         # shadcn/ui primitives (button.tsx, ...)
+        │   ├── ErrorBoundary.tsx           # Phase 7 — catches render errors outside React Router's own errorElement
+        │   ├── PageLoadingFallback.tsx     # Phase 7 — Suspense fallback for lazy-loaded routes
         │   ├── layout/Navbar.tsx           # + NotificationCenter (Phase 4), + Reports (Phase 5), Admin link gated to Admin role (Phase 6)
         │   ├── notifications/              # Phase 4
         │   │   └── NotificationCenter.tsx
@@ -265,8 +301,8 @@ HelpDeskSystem/
         │       └── settings/{api,queries}.ts
         ├── hooks/useAuth.ts
         ├── layouts/
-        │   ├── AppLayout.tsx
-        │   └── AuthLayout.tsx
+        │   ├── AppLayout.tsx                # + <Suspense> around <Outlet/> for lazy-loaded pages (Phase 7)
+        │   └── AuthLayout.tsx               # + <Suspense> around <Outlet/> for lazy-loaded pages (Phase 7)
         ├── lib/utils.ts
         ├── pages/
         │   ├── LoginPage.tsx
@@ -295,7 +331,8 @@ HelpDeskSystem/
         │   ├── ThemeProvider.tsx
         │   └── QueryProvider.tsx
         ├── routes/
-        │   ├── AppRoutes.tsx                # + /reports (Phase 5), + /admin/* nested under AdminRoute (Phase 6)
+        │   ├── AppRoutes.tsx                # + /reports (Phase 5), + /admin/* nested under AdminRoute (Phase 6); all pages lazy-loaded (Phase 7)
+        │   ├── lazyPages.ts                 # Phase 7 — React.lazy definitions, kept out of AppRoutes.tsx (see PITFALLS.md)
         │   ├── ProtectedRoute.tsx
         │   └── AdminRoute.tsx               # Phase 6 — redirects non-Admins away from /admin/*
         ├── types/

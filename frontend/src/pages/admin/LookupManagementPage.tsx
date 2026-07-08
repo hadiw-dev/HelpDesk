@@ -71,12 +71,14 @@ export function LookupManagementPage({ resource, title }: LookupManagementPagePr
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <input
             required
+            aria-label="Name"
             placeholder="Name"
             className={inputClassName}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
           <input
+            aria-label="Description"
             placeholder="Description"
             className={inputClassName}
             value={form.description}
@@ -84,6 +86,7 @@ export function LookupManagementPage({ resource, title }: LookupManagementPagePr
           />
           <input
             type="number"
+            aria-label="Display order"
             placeholder="Display order"
             className={inputClassName}
             value={form.displayOrder}

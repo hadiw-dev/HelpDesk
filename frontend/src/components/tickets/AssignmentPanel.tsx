@@ -62,6 +62,7 @@ export function AssignmentPanel({ ticket }: AssignmentPanelProps) {
 
       <div className="flex flex-wrap items-center gap-2">
         <select
+          aria-label="Select an agent to assign"
           value={selectedAgentId}
           onChange={(e) => setSelectedAgentId(e.target.value)}
           className={selectClassName}

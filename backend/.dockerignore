@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/TestResults/
+tests/
+file-storage/
+**/Logs/
+*.user
+.vs/
+.idea/
+**/*.md

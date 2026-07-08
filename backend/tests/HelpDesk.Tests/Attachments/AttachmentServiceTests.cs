@@ -133,6 +133,36 @@ public class AttachmentServiceTests
     }
 
     [Fact]
+    public async Task UploadAsync_ExtensionAllowedButContentDoesNotMatchSignature_ThrowsValidationAppException()
+    {
+        await using var db = CreateSeededDbContext();
+        var owner = await AddUserAsync(db);
+        var ticket = await AddTicketAsync(db, owner.Id);
+
+        var sut = CreateSut(db, MockCurrentUser(owner.Id, "Employee"), new FakeFileStorageService());
+
+        // ".pdf" is an allowed extension, but the actual bytes are plain text, not a real PDF —
+        // this should be caught by the magic-byte check even though the extension whitelist passes.
+        await Assert.ThrowsAsync<ValidationAppException>(
+            () => sut.UploadAsync(ticket.Id, CreateUploadRequest("report.pdf", "application/pdf", "just plain text, not a pdf")));
+    }
+
+    [Fact]
+    public async Task UploadAsync_PdfWithMatchingSignature_Succeeds()
+    {
+        await using var db = CreateSeededDbContext();
+        var owner = await AddUserAsync(db);
+        var ticket = await AddTicketAsync(db, owner.Id);
+
+        var sut = CreateSut(db, MockCurrentUser(owner.Id, "Employee"), new FakeFileStorageService());
+
+        var result = await sut.UploadAsync(
+            ticket.Id, CreateUploadRequest("report.pdf", "application/pdf", "%PDF-1.4\n%fake but correctly-signed pdf content"));
+
+        Assert.Equal("report.pdf", result.FileName);
+    }
+
+    [Fact]
     public async Task UploadAsync_DisallowedExtension_ThrowsValidationAppException()
     {
         await using var db = CreateSeededDbContext();

@@ -116,6 +116,7 @@ export function AttachmentsPanel({ ticketId }: { ticketId: string }) {
         <input
           ref={fileInputRef}
           type="file"
+          aria-label="Attach a file to this ticket"
           onChange={(e) => void handleFileSelected(e)}
           disabled={uploadMutation.isPending}
           className="text-sm"

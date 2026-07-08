@@ -12,6 +12,7 @@ using HelpDesk.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestPDF.Infrastructure;
@@ -49,9 +50,16 @@ try
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
 
-    // ---- JWT configuration only; no login/register endpoints yet ----
+    // ---- JWT ----
     var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
         ?? throw new InvalidOperationException("Jwt configuration section is missing.");
+
+    if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey) || Encoding.UTF8.GetByteCount(jwtOptions.SecretKey) < 32)
+    {
+        throw new InvalidOperationException(
+            "Jwt:SecretKey must be configured and at least 32 bytes long (set via 'dotnet user-secrets set \"Jwt:SecretKey\" \"...\"'). " +
+            "A short or missing key would make JWT signatures forgeable.");
+    }
 
     builder.Services.AddAuthentication(options =>
         {
@@ -155,18 +163,38 @@ try
 
     var app = builder.Build();
 
+    // ---- Apply pending EF Core migrations on startup (opt-in) ----
+    // Off by default so the existing local-dev workflow (manual `dotnet ef database update`) is
+    // unchanged. The Docker Compose stack sets this to `true` so a fresh `docker compose up` is a
+    // genuinely self-contained, working deployment without a manual migration step. Safe for a
+    // single-replica deployment like this one; a multi-replica production deployment should apply
+    // migrations as a separate release step instead, to avoid several instances racing to migrate.
+    if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
+    {
+        using var migrationScope = app.Services.CreateScope();
+        migrationScope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+    }
+
     // ---- Middleware pipeline ----
     app.UseMiddleware<ExceptionHandlingMiddleware>();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
 
     app.UseSerilogRequestLogging();
 
-    if (app.Environment.IsDevelopment())
+    // Swagger is available in every environment, not just Development — it documents the API
+    // shape, which is already discoverable to anyone with network access to the API; it carries
+    // no secrets. Keeping it on lets the Docker Compose "production-shaped" stack still serve it.
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "HelpDesk API v1");
-        });
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "HelpDesk API v1");
+    });
+
+    if (!app.Environment.IsDevelopment())
+    {
+        // HSTS relies on the browser having already seen at least one HTTPS response, so it's only
+        // meaningful once the app is actually served over HTTPS in a non-dev environment.
+        app.UseHsts();
     }
 
     app.UseHttpsRedirection();

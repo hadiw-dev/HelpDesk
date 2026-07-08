@@ -42,6 +42,7 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
       <div className="grid grid-cols-2 gap-3">
         <input
           required
+          aria-label="First name"
           placeholder="First name"
           className={inputClassName}
           value={form.firstName}
@@ -49,6 +50,7 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
         />
         <input
           required
+          aria-label="Last name"
           placeholder="Last name"
           className={inputClassName}
           value={form.lastName}
@@ -57,6 +59,7 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
         <input
           required
           type="email"
+          aria-label="Email"
           placeholder="Email"
           className={inputClassName}
           value={form.email}
@@ -65,12 +68,14 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
         <input
           required
           type="password"
+          aria-label="Password"
           placeholder="Password"
           className={inputClassName}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
         <select
+          aria-label="Role"
           className={selectClassName}
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -161,6 +166,7 @@ function UserRow({ user }: { user: AdminUser }) {
         </td>
         <td className="px-3 py-2">
           <select
+            aria-label={`Change role for ${user.email}`}
             value={primaryRole}
             onChange={(e) => void handleRoleChange(e.target.value)}
             disabled={changeRole.isPending}
@@ -197,24 +203,28 @@ function UserRow({ user }: { user: AdminUser }) {
           <td colSpan={5} className="px-3 py-3">
             <form onSubmit={(e) => void handleSaveEdit(e)} className="flex flex-wrap items-end gap-2">
               <input
+                aria-label={`First name for ${user.email}`}
                 placeholder="First name"
                 className={inputClassName}
                 value={editForm.firstName}
                 onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
               />
               <input
+                aria-label={`Last name for ${user.email}`}
                 placeholder="Last name"
                 className={inputClassName}
                 value={editForm.lastName}
                 onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
               />
               <input
+                aria-label={`Department for ${user.email}`}
                 placeholder="Department"
                 className={inputClassName}
                 value={editForm.department}
                 onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
               />
               <input
+                aria-label={`Job title for ${user.email}`}
                 placeholder="Job title"
                 className={inputClassName}
                 value={editForm.jobTitle}
@@ -260,6 +270,7 @@ export function UserManagementPage() {
           }}
         >
           <input
+            aria-label="Search users by name or email"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by name or email..."
@@ -269,7 +280,12 @@ export function UserManagementPage() {
             Search
           </button>
         </form>
-        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={selectClassName}>
+        <select
+          aria-label="Filter by role"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className={selectClassName}
+        >
           <option value="">All roles</option>
           {ROLES.map((role) => (
             <option key={role} value={role}>

@@ -143,27 +143,80 @@ public class AuthServiceTests
         userManagerMock.Setup(m => m.CheckPasswordAsync(user, It.IsAny<string>())).ReturnsAsync(false);
         userManagerMock.Setup(m => m.AccessFailedAsync(user)).ReturnsAsync(IdentityResult.Success);
 
+        var activityLogMock = new Mock<IActivityLogService>();
         await using var dbContext = CreateDbContext();
-        var sut = CreateSut(userManagerMock, dbContext);
+        var sut = CreateSut(userManagerMock, dbContext, activityLogMock);
 
         await Assert.ThrowsAsync<UnauthorizedAppException>(() =>
             sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "wrong-password" }, "127.0.0.1"));
 
         userManagerMock.Verify(m => m.AccessFailedAsync(user), Times.Once);
+        activityLogMock.Verify(m => m.LogAsync(
+            user.Id, "LoginFailed", It.IsAny<string>(), "127.0.0.1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task LoginAsync_WhenAccountIsInactive_ThrowsUnauthorizedAppException()
+    public async Task LoginAsync_WhenAccountIsInactive_ThrowsUnauthorizedAppExceptionAndLogsFailureWithoutUserId()
     {
         var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "inactive@helpdesk.local", IsActive = false };
         var userManagerMock = MockUserManager();
         userManagerMock.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
 
+        var activityLogMock = new Mock<IActivityLogService>();
         await using var dbContext = CreateDbContext();
-        var sut = CreateSut(userManagerMock, dbContext);
+        var sut = CreateSut(userManagerMock, dbContext, activityLogMock);
 
         await Assert.ThrowsAsync<UnauthorizedAppException>(() =>
             sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "anything" }, "127.0.0.1"));
+
+        // An inactive/unknown account is deliberately logged without a user id, so the log itself
+        // doesn't confirm the account exists to anyone reading it.
+        activityLogMock.Verify(m => m.LogAsync(
+            null, "LoginFailed", It.IsAny<string>(), "127.0.0.1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenAccountIsLockedOut_ThrowsUnauthorizedAppExceptionAndLogsFailure()
+    {
+        var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "locked@helpdesk.local", IsActive = true };
+        var userManagerMock = MockUserManager();
+        userManagerMock.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
+        userManagerMock.Setup(m => m.IsLockedOutAsync(user)).ReturnsAsync(true);
+
+        var activityLogMock = new Mock<IActivityLogService>();
+        await using var dbContext = CreateDbContext();
+        var sut = CreateSut(userManagerMock, dbContext, activityLogMock);
+
+        await Assert.ThrowsAsync<UnauthorizedAppException>(() =>
+            sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "anything" }, "127.0.0.1"));
+
+        activityLogMock.Verify(m => m.LogAsync(
+            user.Id, "LoginFailed", It.IsAny<string>(), "127.0.0.1", It.IsAny<CancellationToken>()), Times.Once);
+        userManagerMock.Verify(m => m.CheckPasswordAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenSuccessful_LogsUserLoggedInActivity()
+    {
+        var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "user@helpdesk.local", IsActive = true };
+        var userManagerMock = MockUserManager();
+        userManagerMock.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
+        userManagerMock.Setup(m => m.IsLockedOutAsync(user)).ReturnsAsync(false);
+        userManagerMock.Setup(m => m.CheckPasswordAsync(user, It.IsAny<string>())).ReturnsAsync(true);
+        userManagerMock.Setup(m => m.ResetAccessFailedCountAsync(user)).ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["Employee"]);
+
+        var activityLogMock = new Mock<IActivityLogService>();
+        await using var dbContext = CreateDbContext();
+        var sut = CreateSut(userManagerMock, dbContext, activityLogMock);
+
+        var result = await sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "correct" }, "127.0.0.1");
+
+        Assert.NotEmpty(result.AccessToken);
+        activityLogMock.Verify(m => m.LogAsync(
+            user.Id, "UserLoggedIn", It.IsAny<string>(), "127.0.0.1", It.IsAny<CancellationToken>()), Times.Once);
+        activityLogMock.Verify(m => m.LogAsync(
+            It.IsAny<Guid?>(), "LoginFailed", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

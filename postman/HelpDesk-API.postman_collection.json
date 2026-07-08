@@ -1,0 +1,928 @@
+{
+  "info": {
+    "name": "HelpDesk API",
+    "description": "IT Help Desk & Ticketing Management System — complete API collection covering Auth, Tickets, Assignments, Comments, Attachments, Notifications, Dashboard/Reports, and Admin (Users, Lookups, Activity Logs, Settings).\n\nSetup:\n1. Import the companion environment file `HelpDesk-Local.postman_environment.json` and select it.\n2. Run `Auth > Register` (or `Auth > Login` if the account already exists) once — its test script stores `accessToken` / `refreshToken` / `userId` as collection variables automatically, and every other request is authorized via a collection-level Bearer token that reads `{{accessToken}}`.\n3. Run `Lookups > Get Categories` and `Get Priorities` once to populate `{{categoryId}}` / `{{priorityId}}`, then `Tickets > Create Ticket` to populate `{{ticketId}}`.\n4. Admin-only requests (the `Admin - *` folders) need a token for a user in the Admin role — either promote the registered test account directly in the database, or log in as an existing Admin account and re-run Login.\n\nAll endpoints are versioned under `/api/v1`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5019" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "ticketId", "value": "" },
+    { "key": "attachmentId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "priorityId", "value": "" },
+    { "key": "statusId", "value": "" },
+    { "key": "agentId", "value": "" },
+    { "key": "adminUserId", "value": "" },
+    { "key": "resetToken", "value": "" },
+    { "key": "notificationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "pm.collectionVariables.set('userId', body.user.id);",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns an access token', () => pm.expect(body.accessToken).to.not.be.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Passw0rd!123\",\n  \"confirmPassword\": \"Passw0rd!123\",\n  \"firstName\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "pm.collectionVariables.set('userId', body.user.id);",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"user@helpdesk.local\",\n  \"password\": \"Passw0rd!123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login - Wrong Password (expect 401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"user@helpdesk.local\",\n  \"password\": \"DefinitelyWrong!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh-token"] }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "profile"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"department\": \"IT\",\n  \"jobTitle\": \"Support Specialist\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "profile"] }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"currentPassword\": \"Passw0rd!123\",\n  \"newPassword\": \"NewPassw0rd!123\",\n  \"confirmPassword\": \"NewPassw0rd!123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/change-password", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "change-password"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"user@helpdesk.local\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"user@helpdesk.local\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"NewPassw0rd!123\",\n  \"confirmPassword\": \"NewPassw0rd!123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "reset-password"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Demo (Ping)",
+      "item": [
+        {
+          "name": "Ping - Anonymous",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/ping", "host": ["{{baseUrl}}"], "path": ["api", "v1", "ping"] }
+          }
+        },
+        {
+          "name": "Ping - Admin Only (expect 403 for non-Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/ping/admin", "host": ["{{baseUrl}}"], "path": ["api", "v1", "ping", "admin"] }
+          }
+        },
+        {
+          "name": "Ping - Manager or Admin (expect 403 for Employee)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/ping/management", "host": ["{{baseUrl}}"], "path": ["api", "v1", "ping", "management"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookups (Read-only)",
+      "item": [
+        {
+          "name": "Get Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('categoryId', body[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/lookups/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "lookups", "categories"] }
+          }
+        },
+        {
+          "name": "Get Priorities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('priorityId', body[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/lookups/priorities", "host": ["{{baseUrl}}"], "path": ["api", "v1", "lookups", "priorities"] }
+          }
+        },
+        {
+          "name": "Get Statuses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('statusId', body[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/lookups/statuses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "lookups", "statuses"] }
+          }
+        },
+        {
+          "name": "Get Assignable Agents (Agent+ only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('agentId', body[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/lookups/agents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "lookups", "agents"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Search Tickets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets?page=1&pageSize=20&sortBy=createdAt&sortDescending=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets"],
+              "query": [
+                { "key": "searchTerm", "value": "", "disabled": true },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
+                { "key": "priorityId", "value": "{{priorityId}}", "disabled": true },
+                { "key": "statusId", "value": "{{statusId}}", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortDescending", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('ticketId', body.id);",
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"title\": \"Printer not working on 3rd floor\",\n  \"description\": \"The HP printer near the east stairwell is jammed and shows an error light.\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"priorityId\": \"{{priorityId}}\",\n  \"dueDate\": null\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets"] }
+          }
+        },
+        {
+          "name": "Get Ticket By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] }
+          }
+        },
+        {
+          "name": "Get Ticket History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "history"]
+            }
+          }
+        },
+        {
+          "name": "Update Ticket",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"title\": \"Printer not working on 3rd floor (updated)\",\n  \"description\": \"Still jammed after clearing the tray — needs a technician.\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"priorityId\": \"{{priorityId}}\",\n  \"statusId\": \"{{statusId}}\",\n  \"dueDate\": null\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] }
+          }
+        },
+        {
+          "name": "Assign Ticket (Agent+ only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"assignedToUserId\": \"{{agentId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/assign", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "assign"] }
+          }
+        },
+        {
+          "name": "Auto-Assign Ticket (round robin, Agent+ only)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/auto-assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "auto-assign"]
+            }
+          }
+        },
+        {
+          "name": "Get Assignment History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/assignments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "assignments"]
+            }
+          }
+        },
+        {
+          "name": "Get Comments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"content\": \"Confirmed on-site — replacement part ordered.\",\n  \"isInternal\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Get Attachments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "attachments"]
+            }
+          }
+        },
+        {
+          "name": "Upload Attachment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('attachmentId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "attachments"]
+            },
+            "description": "Select a real file for the 'file' form field before sending — magic-byte content validation runs server-side, so the file's actual bytes must match its extension (e.g. a real PDF for a .pdf upload)."
+          }
+        },
+        {
+          "name": "Download Attachment",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/attachments/{{attachmentId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "attachments", "{{attachmentId}}", "download"]
+            }
+          }
+        },
+        {
+          "name": "Delete Attachment",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/attachments/{{attachmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "attachments", "{{attachmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Restore Ticket (Manager/Admin only)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/restore", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "restore"] }
+          }
+        },
+        {
+          "name": "Delete Ticket (Agent+ only, soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Search Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=1&pageSize=20&unreadOnly=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" },
+                { "key": "unreadOnly", "value": "false" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api", "v1", "notifications", "unread-count"] }
+          }
+        },
+        {
+          "name": "Mark Notification As Read",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications As Read",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["api", "v1", "notifications", "read-all"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Reports",
+      "item": [
+        {
+          "name": "KPI Summary",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/kpi-summary", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "kpi-summary"] }
+          }
+        },
+        {
+          "name": "Tickets By Category",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/tickets-by-category", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "tickets-by-category"] }
+          }
+        },
+        {
+          "name": "Tickets By Priority",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/tickets-by-priority", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "tickets-by-priority"] }
+          }
+        },
+        {
+          "name": "Monthly Tickets",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/monthly-tickets", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "monthly-tickets"] }
+          }
+        },
+        {
+          "name": "Resolution Time",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/resolution-time", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "resolution-time"] }
+          }
+        },
+        {
+          "name": "SLA Report",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/sla-report", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "sla-report"] }
+          }
+        },
+        {
+          "name": "Export Dashboard PDF",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/reports/pdf", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "reports", "pdf"] }
+          }
+        },
+        {
+          "name": "Export Dashboard Excel",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/reports/excel", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "reports", "excel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Users (Admin only)",
+      "item": [
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                { "key": "searchTerm", "value": "", "disabled": true },
+                { "key": "role", "value": "", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('adminUserId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Passw0rd!123\",\n  \"firstName\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"department\": \"IT\",\n  \"jobTitle\": \"Support Agent\",\n  \"role\": \"IT Support Agent\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users"] }
+          }
+        },
+        {
+          "name": "Get User By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users", "{{adminUserId}}"] }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Agent\",\n  \"department\": \"IT\",\n  \"jobTitle\": \"Senior Support Agent\",\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users", "{{adminUserId}}"] }
+          }
+        },
+        {
+          "name": "Change User Role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"role\": \"Manager\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users", "{{adminUserId}}", "role"] }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users", "{{adminUserId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Lookups (Admin only)",
+      "item": [
+        {
+          "name": "Categories - Get All",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories"] }
+          }
+        },
+        {
+          "name": "Categories - Create",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"New Category\",\n  \"description\": \"Created via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories"] }
+          }
+        },
+        {
+          "name": "Categories - Update",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Renamed Category\",\n  \"description\": \"Updated via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Categories - Delete (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Priorities - Get All",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/priorities", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "priorities"] }
+          }
+        },
+        {
+          "name": "Priorities - Create",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Urgent\",\n  \"description\": \"Created via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/priorities", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "priorities"] }
+          }
+        },
+        {
+          "name": "Priorities - Update",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Urgent (renamed)\",\n  \"description\": \"Updated via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/priorities/{{priorityId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "priorities", "{{priorityId}}"] }
+          }
+        },
+        {
+          "name": "Priorities - Delete (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/priorities/{{priorityId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "priorities", "{{priorityId}}"] }
+          }
+        },
+        {
+          "name": "Statuses - Get All",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/statuses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "statuses"] }
+          }
+        },
+        {
+          "name": "Statuses - Create",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Waiting on Vendor\",\n  \"description\": \"Created via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/statuses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "statuses"] }
+          }
+        },
+        {
+          "name": "Statuses - Update",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Waiting on Vendor (renamed)\",\n  \"description\": \"Updated via Postman\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/statuses/{{statusId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "statuses", "{{statusId}}"] }
+          }
+        },
+        {
+          "name": "Statuses - Delete (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/statuses/{{statusId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "statuses", "{{statusId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Activity Logs (Admin only)",
+      "item": [
+        {
+          "name": "Search Activity Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/activity-logs?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "activity-logs"],
+              "query": [
+                { "key": "action", "value": "", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Settings (Admin only)",
+      "item": [
+        {
+          "name": "Get System Settings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/settings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "settings"] }
+          }
+        },
+        {
+          "name": "Update System Settings",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"siteName\": \"HelpDesk System\",\n  \"maxFileUploadSizeMb\": 10,\n  \"allowedFileExtensions\": \".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.zip,.txt\",\n  \"defaultPageSize\": 20\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/settings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "settings"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health & Diagnostics",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "Swagger JSON Document",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/swagger/v1/swagger.json", "host": ["{{baseUrl}}"], "path": ["swagger", "v1", "swagger.json"] }
+          }
+        }
+      ]
+    }
+  ]
+}

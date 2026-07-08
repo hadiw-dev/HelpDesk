@@ -1,0 +1,85 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: helpdesk-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433" # Exposed for local inspection (SSMS/Azure Data Studio) — do not expose publicly in real production.
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - helpdesk-network
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: helpdesk-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      # Swagger is available regardless of environment (see Program.cs), so this can honestly be
+      # "Production" rather than "Development" — this compose stack is meant to demonstrate a
+      # production-shaped deployment, not a dev inner-loop. HSTS activates under Production too;
+      # harmless here since the container serves plain HTTP with no TLS termination in front of it.
+      ASPNETCORE_ENVIRONMENT: Production
+      ApplyMigrationsOnStartup: "true"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=HelpDeskSystemDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
+      Jwt__Issuer: HelpDeskSystem.Docker
+      Jwt__Audience: HelpDeskSystemClient.Docker
+      Cors__AllowedOrigins__0: http://localhost:3000
+      FileStorage__RootPath: /app/file-storage
+    ports:
+      - "5019:8080"
+    volumes:
+      - helpdesk_file_storage:/app/file-storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - helpdesk-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the JS bundle at build time — must be reachable from the user's browser, so
+        # it points at the api service's published HOST port, not its internal container DNS name.
+        VITE_API_BASE_URL: http://localhost:5019/api/v1
+    container_name: helpdesk-frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - helpdesk-network
+
+networks:
+  helpdesk-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  helpdesk_file_storage:
